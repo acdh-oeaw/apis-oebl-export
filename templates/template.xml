@@ -1,0 +1,32 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Eintrag Nummer="{{ source.orig_filename }}" apis_id="{{ id }}">
+  <Lexikonartikel>
+    <Schlagwort>
+      <Hauptbezeichnung>{{ name }}</Hauptbezeichnung>
+      <Nebenbezeichnung Type="Vorname">{{ first_name }}</Nebenbezeichnung>
+    </Schlagwort>
+    <Vita>
+      <Geburt></Geburt>
+      <Tod></Tod>
+      <Beruf Berufsgruppe="{{ berufsgruppe }}">{{ berufe|join(', ') }}<Beruf>
+    </Vita>
+    <Geschlecht Type="{% if gender == "male"%}m{% endif %}{% if gender == "female" %}f{% endif %}" />
+    <Pubinfo Reihe="" Band="" Lieferung="" Seite="" Jahr="" Monat="" Tag="">{{ source.pubinfo }}</Pubinfo>
+    <Kurzdefinition></Kurzdefinition>
+    <Haupttext></Haupttext>
+    <Werk/>
+    <Literatur/>
+    <Autor>{{ source.author }}</Autor>
+    <URIs>{{ uris | join(', ') }}</URIs>
+    <Relationen>
+      {% for relation in relations %}
+      <Relation Type="{{ relation.name }}">
+        <obj>{{ relation.obj }}</obj>
+	<subj>{{ relation.subj }}</subj>
+	<start_date_written>{{ relation.start_date_written }}</start_date_written>
+	<end_date_written>{{ relation.end_date_written }}</end_date_written>
+      </Relation>
+      {% endfor %}
+    </Relationen>
+  </Lexikonartikel>
+</Eintrag>
