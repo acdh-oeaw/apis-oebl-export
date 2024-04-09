@@ -7,6 +7,8 @@ name: "Build xmls and check their validit"
 
 on:
   push:
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
@@ -30,5 +32,7 @@ jobs:
          poetry install
      - name: Run xml creation
        run: poetry run apis_oebl_export/export.py
+       env:
+         TOKEN: ${{ secrets.TOKEN }}
      - name: Lint xml file
        run: xmllint --noout --relaxng oebl_relax_ng_v1.rng output/*.xml
