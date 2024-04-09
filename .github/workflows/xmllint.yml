@@ -31,7 +31,7 @@ jobs:
          poetry lock
          poetry install
      - name: Run xml creation
-       run: poetry run apis_oebl_export/export.py
+       run: poetry run apis_oebl_export/export.py --all
        env:
          TOKEN: ${{ secrets.TOKEN }}
      - name: Lint xml file
