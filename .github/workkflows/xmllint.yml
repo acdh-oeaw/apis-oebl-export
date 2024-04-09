@@ -1,0 +1,32 @@
+#Github workflow for linting xml file
+#
+#SPDX-FileCopyrightText: 2024 Birger Schacht
+#SPDX-License-Identifier: MIT
+
+name: "Build xmls and check their validit"
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  buildandlint:
+    steps:
+     - name: Install xmllint and fetch rnd
+       run: |
+         sudo apt update
+         sudo apt-get -y install libxml2-utils wget
+     - name: Checkout sicprod repository
+       uses: actions/checkout@v3
+     - name: Set up Python
+       uses: actions/setup-python@v3
+     - name: Install poetry and setuptools
+       run: |
+        pip install poetry
+     - name: Install dependencies
+       run: |
+         poetry lock
+         poetry install
+         poetry run apis_oebl_export/export.py
+     - name: Lint xml file
+       run: xmllint --noout --relaxng oebl_relax_ng_v1.rng output/*.xml
