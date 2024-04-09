@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import argparse
 import json
 import requests
 import os
@@ -249,9 +250,23 @@ def export_texts():
 
 
 if __name__ == "__main__":
-    #export_texts()
-    #export_sources()
-    #export_uris()
-    #export_professions()
-    export_relations()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--texts", action="store_true")
+    parser.add_argument("--sources", action="store_true")
+    parser.add_argument("--uris", action="store_true")
+    parser.add_argument("--professions", action="store_true")
+    parser.add_argument("--relations", action="store_true")
+    parser.add_argument("--all", action="store_true")
+
+    args = parser.parse_args()
+    if args.texts or args.all:
+        export_texts()
+    if args.sources or args.all:
+        export_sources()
+    if args.uris or args.all:
+        export_uris()
+    if args.professions or args.all:
+        export_professions()
+    if args.relations or args.all:
+        export_relations()
     export_persons()
