@@ -11,6 +11,7 @@ on:
 
 jobs:
   buildandlint:
+    runs-on: ubuntu-latest
     steps:
      - name: Install xmllint and fetch rnd
        run: |
