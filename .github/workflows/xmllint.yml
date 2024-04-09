@@ -27,6 +27,7 @@ jobs:
        run: |
          poetry lock
          poetry install
+     - name: Run xml creation
          poetry run apis_oebl_export/export.py
      - name: Lint xml file
        run: xmllint --noout --relaxng oebl_relax_ng_v1.rng output/*.xml
