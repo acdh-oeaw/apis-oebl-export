@@ -1,0 +1,201 @@
+<grammar xmlns="http://relaxng.org/ns/structure/1.0" datatypeLibrary="http://www.w3.org/2001/XMLSchema-datatypes">
+  <start>
+    <element name="Eintrag">
+      <attribute name="Nummer"><text/></attribute>
+      <attribute name="Version">
+          <data type="int"/>
+      </attribute>
+      <attribute name="eoebl_id">
+          <data type="int"/>
+      </attribute>
+      <choice>
+      <attribute name="gnd">
+        <choice>
+          <data type="string">
+            <param name="pattern">1[0123]?\d{7}[0-9X]|[47]\d{6}-\d|[1-9]\d{0,7}-[0-9X]|3\d{7}[0-9X]</param>
+          </data>
+          <empty/>
+        </choice>
+      </attribute>
+      <attribute name="wikidata">
+        <choice>
+          <data type="string">
+            <param name="pattern">Q[0-9]+</param>
+          </data>
+          <empty/>
+        </choice>
+      </attribute>
+      </choice>
+          <element name="Lexikonartikel">
+            <zeroOrMore>
+              <choice>
+                <element name="Schlagwort">
+                  <zeroOrMore>
+                    <choice>
+                      <element name="Hauptbezeichnung"><text/></element>
+                      <element name="Nebenbezeichnung">
+                        <attribute name="Type"><text/></attribute>
+                        <text/>
+                      </element>
+                    </choice>
+                  </zeroOrMore>
+                </element>
+                <element name="Sortierung_Nachname"><text/></element>
+                <element name="Sortierung_Vorname"><text/></element>
+                <element name="Schlagwort_Nachname"><text/></element>
+                <element name="Schlagwort_Vorname"><text/></element>
+                <element name="Vita">
+                  <zeroOrMore>
+                    <choice>
+                      <element name="Geburt">
+                        <attribute name="Metadatum">
+                          <choice>
+                            <data type="int">
+                              <param name="minInclusive">0</param>
+                              <param name="maxInclusive">2024</param>
+                            </data>
+                            <empty/>
+                          </choice>
+                        </attribute>
+                        <attribute name="TT">
+                          <choice>
+                            <data type="int">
+                              <param name="minInclusive">1</param>
+                              <param name="maxInclusive">31</param>
+                            </data>
+                            <empty/>
+                          </choice>
+                        </attribute>
+                        <attribute name="MM">
+                          <choice>
+                            <data type="int">
+                              <param name="minInclusive">1</param>
+                              <param name="maxInclusive">12</param>
+                            </data>
+                            <empty/>
+                          </choice>
+                        </attribute>
+                        <text/>
+                        <element name="Geographischer_Begriff">
+                          <attribute name="OrtAlt"><text/></attribute>
+                          <attribute name="OrtNeu"><text/></attribute>
+                          <attribute name="LandAlt"><text/></attribute>
+                          <attribute name="LandNeu"><text/></attribute>
+                          <text/>
+                        </element>
+                      </element>
+                      <element name="Tod">
+                        <attribute name="Metadatum">
+                          <choice>
+                            <data type="int">
+                              <param name="minInclusive">0</param>
+                              <param name="maxInclusive">2024</param>
+                            </data>
+                            <empty/>
+                          </choice>
+                        </attribute>
+                        <attribute name="TT">
+                          <choice>
+                            <data type="int">
+                              <param name="minInclusive">1</param>
+                              <param name="maxInclusive">31</param>
+                            </data>
+                            <empty/>
+                          </choice>
+                        </attribute>
+                        <attribute name="MM">
+                          <choice>
+                            <data type="int">
+                              <param name="minInclusive">1</param>
+                              <param name="maxInclusive">12</param>
+                            </data>
+                            <empty/>
+                          </choice>
+                        </attribute>
+                        <text/>
+                        <element name="Geographischer_Begriff">
+                          <attribute name="OrtAlt"><text/></attribute>
+                          <attribute name="OrtNeu"><text/></attribute>
+                          <attribute name="LandAlt"><text/></attribute>
+                          <attribute name="LandNeu"><text/></attribute>
+                          <text/>
+                        </element>
+                      </element>
+                      <element name="Beruf">
+                        <attribute name="Berufsgruppe">
+                          <choice>
+                            <value>Bildende und angewandte Kunst</value>
+                            <value>Diverse</value>
+                            <value>Geisteswissenschaft</value>
+                            <value>Land- und Forstwirtschaft</value>
+                            <value>Literatur, Buch- und Zeitungswesen</value>
+                            <value>Medizin</value>
+                            <value>Militär</value>
+                            <value>Musik und darstellende Kunst</value>
+                            <value>Naturwissenschaft</value>
+                            <value>Politik</value>
+                            <value>Rechtswesen und Rechtswissenschaft</value>
+                            <value>Religionen und Theologie</value>
+                            <value>Sozial- und Wirtschaftswissenschaften</value>
+                            <value>Sport</value>
+                            <value>Technik</value>
+                            <value>Unterrichtswesen</value>
+                            <value>Verwaltung</value>
+                            <value>Wirtschaft</value>
+                          </choice>
+                        </attribute>
+                        <text/>
+                      </element>
+                    </choice>
+                  </zeroOrMore>
+                </element>
+                <element name="Geschlecht">
+                  <choice>
+                    <attribute name="Type"><value>m</value></attribute>
+                    <attribute name="Type"><value>w</value></attribute>
+                    <attribute name="Type"><empty /></attribute>
+                  </choice>
+                </element>
+                <element name="Kurzdefinition"><text/></element>
+                <element name="Haupttext"><text/></element>
+                <element name="Werke"><text/></element>
+                <element name="Literatur"><text/></element>
+                <element name="Autor"><text/></element>
+                <element name="PubInfo">
+                  <attribute name="Reihe"><text/></attribute>
+                  <attribute name="Band"><text/></attribute>
+                  <attribute name="Lieferung">
+                    <data type="int"/>
+                  </attribute>
+                  <attribute name="Seite">
+                    <choice>
+                      <data type="int"/>
+                      <empty/>
+                    </choice>
+                  </attribute>
+                  <attribute name="Jahr">
+                    <data type="int">
+                      <param name="minInclusive">1950</param>
+                      <param name="maxInclusive">2024</param>
+                    </data>
+                  </attribute>
+                    <attribute name="Monat">
+                      <data type="int">
+                        <param name="minInclusive">1</param>
+                        <param name="maxInclusive">12</param>
+                      </data>
+                    </attribute>
+                    <attribute name="Tag">
+                      <data type="int">
+                        <param name="minInclusive">1</param>
+                        <param name="maxInclusive">31</param>
+                      </data>
+                    </attribute>
+                  <text/>
+                </element>
+              </choice>
+            </zeroOrMore>
+          </element>
+    </element>
+  </start>
+</grammar>
