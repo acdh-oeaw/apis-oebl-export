@@ -2,13 +2,17 @@
   <start>
     <element name="Eintrag">
       <attribute name="Nummer"><text/></attribute>
+      <optional>
       <attribute name="Version">
           <data type="int"/>
       </attribute>
+      </optional>
+      <optional>
       <attribute name="eoebl_id">
           <data type="int"/>
       </attribute>
-      <choice>
+      </optional>
+      <optional>
       <attribute name="gnd">
         <choice>
           <data type="string">
@@ -17,6 +21,8 @@
           <empty/>
         </choice>
       </attribute>
+      </optional>
+      <optional>
       <attribute name="wikidata">
         <choice>
           <data type="string">
@@ -25,7 +31,27 @@
           <empty/>
         </choice>
       </attribute>
-      </choice>
+      </optional>
+      <optional>
+      <attribute name="doi">
+        <choice>
+          <data type="string">
+            <param name="pattern">10\.\d{4,9}/[\-\._;()/:A-Za-z0-9]+</param>
+          </data>
+          <empty/>
+        </choice>
+      </attribute>
+    </optional>
+      <optional>
+      <attribute name="pdf_file">
+        <choice>
+          <data type="string">
+            <param name="pattern">oebl_[0-9]+/[0-9]+\.pdf</param>
+          </data>
+          <empty/>
+        </choice>
+      </attribute>
+      </optional>
           <element name="Lexikonartikel">
             <zeroOrMore>
               <choice>
@@ -57,6 +83,7 @@
                             <empty/>
                           </choice>
                         </attribute>
+                        <optional>
                         <attribute name="TT">
                           <choice>
                             <data type="int">
@@ -75,12 +102,15 @@
                             <empty/>
                           </choice>
                         </attribute>
+                      </optional>
                         <text/>
                         <element name="Geographischer_Begriff">
+                          <optional>
                           <attribute name="OrtAlt"><text/></attribute>
                           <attribute name="OrtNeu"><text/></attribute>
                           <attribute name="LandAlt"><text/></attribute>
                           <attribute name="LandNeu"><text/></attribute>
+                          </optional>
                           <text/>
                         </element>
                       </element>
@@ -94,6 +124,7 @@
                             <empty/>
                           </choice>
                         </attribute>
+                        <optional>
                         <attribute name="TT">
                           <choice>
                             <data type="int">
@@ -112,16 +143,19 @@
                             <empty/>
                           </choice>
                         </attribute>
+                      </optional>
                         <text/>
                         <element name="Geographischer_Begriff">
+                          <optional>
                           <attribute name="OrtAlt"><text/></attribute>
                           <attribute name="OrtNeu"><text/></attribute>
                           <attribute name="LandAlt"><text/></attribute>
                           <attribute name="LandNeu"><text/></attribute>
+                          </optional>
                           <text/>
                         </element>
                       </element>
-                      <element name="Beruf">
+                      <element name="Berufsgruppe">
                         <attribute name="Berufsgruppe">
                           <choice>
                             <value>Bildende und angewandte Kunst</value>
@@ -156,46 +190,202 @@
                     <attribute name="Type"><empty /></attribute>
                   </choice>
                 </element>
-                <element name="Kurzdefinition"><text/></element>
-                <element name="Haupttext"><text/></element>
-                <element name="Werke"><text/></element>
-                <element name="Literatur"><text/></element>
+                <element name="Kurzdefinition">
+                  <optional>
+                  <text/>
+                </optional>
+                  <optional>
+                  <element name="Verweis">
+                    <attribute name="href"><text/></attribute>
+                    <text/>
+                  </element>
+                </optional>
+                  <optional>
+                  <text/>
+                </optional>
+                </element>
+                <element name="Haupttext">
+                  <optional>
+                  <text/>
+                </optional>
+                  <optional>
+                  <element name="Verweis">
+                    <attribute name="href"><text/></attribute>
+                    <text/>
+                  </element>
+                </optional>
+                  <optional>
+                  <text/>
+                </optional>
+                </element>
+                <element name="Werk"><text/></element>
+                <element name="Literatur">
+                  <optional>
+                    <element name="Nekrolog"><text/></element>
+                  </optional><text/>
+                </element>
                 <element name="Autor"><text/></element>
+                <optional>
+                  <element name="Medien">
+                    <zeroOrMore>
+                      <choice>
+                        <element name="Bild">
+                          <attribute name="src"><text/></attribute>
+                          <attribute name="type">
+                            <choice>
+                              <value>online</value>
+                            </choice>
+                          </attribute>
+                          <optional>
+                          <attribute name="width">
+                            <data type="int"/>
+                          </attribute>
+                        </optional>
+                          <optional>
+                          <attribute name="height">
+                            <data type="int"/>
+                          </attribute>
+                        </optional>
+                          <optional>
+                          <attribute name="alt"><text/></attribute>
+                        </optional>
+                          <optional>
+                          <attribute name="title"><text/></attribute>
+                        </optional>
+                          <optional>
+                          <attribute name="caption"><text/></attribute>
+                        </optional>
+                        <optional>
+                          <element name="Medienbeschreibung"><text/></element>
+                        </optional>
+                        <optional>
+                          <element name="Copyright"><text/></element>
+                        </optional>
+                        <text/>
+                        </element>
+                        <element name="Video">
+                          <attribute name="href"><text/></attribute>
+                          <optional>
+                          <attribute name="width">
+                            <data type="int"/>
+                          </attribute>
+                        </optional>
+                          <optional>
+                          <attribute name="height">
+                            <data type="int"/>
+                          </attribute>
+                        </optional>
+                          <optional>
+                          <attribute name="alt"><text/></attribute>
+                        </optional>
+                          <optional>
+                          <attribute name="title"><text/></attribute>
+                        </optional>
+                          <optional>
+                          <attribute name="caption"><text/></attribute>
+                        </optional>
+                        </element>
+                        <element name="Audio">
+                          <attribute name="href"><text/></attribute>
+                          <optional>
+                          <attribute name="width">
+                            <data type="int"/>
+                          </attribute>
+                        </optional>
+                          <optional>
+                          <attribute name="height">
+                            <data type="int"/>
+                          </attribute>
+                        </optional>
+                          <optional>
+                          <attribute name="alt"><text/></attribute>
+                        </optional>
+                          <optional>
+                          <attribute name="title"><text/></attribute>
+                        </optional>
+                          <optional>
+                          <attribute name="caption"><text/></attribute>
+                        </optional>
+                        </element>
+                        <element name="Text">
+                          <attribute name="href"><text/></attribute>
+                          <optional>
+                          <attribute name="width">
+                            <data type="int"/>
+                          </attribute>
+                        </optional>
+                          <optional>
+                          <attribute name="height">
+                            <data type="int"/>
+                          </attribute>
+                        </optional>
+                          <optional>
+                          <attribute name="alt"><text/></attribute>
+                        </optional>
+                        </element>
+                      </choice>
+                    </zeroOrMore> 
+                  </element>
+                </optional>
+                <optional>
+                  <element name="Externer_Verweis">
+                    <attribute name="href"><text /></attribute>
+                    <text /></element>
+                </optional>
                 <element name="PubInfo">
-                  <attribute name="Reihe"><text/></attribute>
+                  <attribute name="Reihe"><choice><text/><empty/></choice></attribute>
                   <attribute name="Band"><text/></attribute>
                   <attribute name="Lieferung">
                     <data type="int"/>
                   </attribute>
                   <attribute name="Seite">
-                    <choice>
-                      <data type="int"/>
-                      <empty/>
-                    </choice>
+        <choice>
+          <data type="string">
+            <param name="pattern">[0-9\.f]+</param>
+          </data>
+          <empty/>
+        </choice>
                   </attribute>
                   <attribute name="Jahr">
+                    <choice>
                     <data type="int">
                       <param name="minInclusive">1950</param>
                       <param name="maxInclusive">2024</param>
                     </data>
+                    <empty/>
+                  </choice>
                   </attribute>
                     <attribute name="Monat">
+                      <choice>
                       <data type="int">
                         <param name="minInclusive">1</param>
                         <param name="maxInclusive">12</param>
                       </data>
+                      <empty/>
+                    </choice>
                     </attribute>
                     <attribute name="Tag">
+                      <choice>
                       <data type="int">
                         <param name="minInclusive">1</param>
                         <param name="maxInclusive">31</param>
                       </data>
+                      <empty/>
+                    </choice>
                     </attribute>
                   <text/>
                 </element>
               </choice>
             </zeroOrMore>
           </element>
+                <optional>
+                  <element name="Notiz">
+                    <optional>
+                      <attribute name="status"><text /></attribute>
+                    </optional>
+                    <text />
+                  </element>
+                </optional>
     </element>
   </start>
 </grammar>
