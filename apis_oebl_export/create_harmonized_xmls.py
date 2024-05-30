@@ -1,18 +1,20 @@
 import argparse
+import csv
 from datetime import datetime
 import logging
 import os
 import re
+from typing import Literal
 from lxml import etree as ET
 
-xml_prefix = """<?xml version="1.0" encoding="UTF-8"?>
-<?xml-model href="https://raw.githubusercontent.com/acdh-oeaw/apis-oebl-export/main/oebl_relax_ng_v1.rng" type="application/xml"
-schematypens="http://relaxng.org/ns/structure/1.0"?>
-"""
 # xml_prefix = """<?xml version="1.0" encoding="UTF-8"?>
-# <?xml-model href="/workspaces/oebl-apis-rdf/apis-oebl-export/oebl_relax_ng_v1.rng" type="application/xml"
+# <?xml-model href="https://raw.githubusercontent.com/acdh-oeaw/apis-oebl-export/main/oebl_relax_ng_v1.rng" type="application/xml"
 # schematypens="http://relaxng.org/ns/structure/1.0"?>
 # """
+xml_prefix = """<?xml version="1.0" encoding="UTF-8"?>
+<?xml-model href="/workspaces/oebl-apis-rdf/apis-oebl-export/oebl_relax_ng_v1.rng" type="application/xml"
+schematypens="http://relaxng.org/ns/structure/1.0"?>
+"""
 oebl_ns = {"oebl": "http://www.biographien.ac.at"}
 logging.basicConfig(
     filename=f"create_harmonized_xmls_{datetime.now().strftime('%d-%m-%Y_%H:%M:%S')}.log",
@@ -65,114 +67,119 @@ def remove_namespace(doc, namespace):
             elem.tag = elem.tag[nsl:]
 
 
-def get_data_from_gideon_files(xml_file_name: str, dirs: list) -> dict:
+def get_data_from_gideon_files(
+    xml_file_name: str, gideon_index: dict, kind: Literal["online", "print"]
+) -> dict:
     data = {
         "PubInfo": None,
         "Geburt": None,
         "Tod": None,
     }
-    for directory in dirs:
-        for subdir, dirs, files in os.walk(directory[0]):
-            for file in files:
-                if file == xml_file_name.split(".")[0] + directory[1]:
-                    file_path = os.path.join(subdir, file)
-                    tree = ET.parse(file_path)
-                    remove_namespace(tree, "{http://www.biographien.ac.at}")
-                    root = tree.getroot()
+    if xml_file_name in gideon_index:
+        if kind in gideon_index[xml_file_name]:
+            file_path = gideon_index[xml_file_name][kind]
+            tree = ET.parse(file_path)
+            remove_namespace(tree, "{http://www.biographien.ac.at}")
+            root = tree.getroot()
 
-                    pub_info = root.find(".//PubInfo")
-                    geburt = root.find(".//Geburt")
-                    tod = root.find(".//Tod")
-                    data = {
-                        "PubInfo": pub_info,
-                        "Geburt": geburt,
-                        "Tod": tod,
-                    }
+            pub_info = root.find(".//PubInfo")
+            geburt = root.find(".//Geburt")
+            tod = root.find(".//Tod")
+            data = {
+                "PubInfo": pub_info,
+                "Geburt": geburt,
+                "Tod": tod,
+            }
     return data
 
 
 def copy_print_version(
     xml_file_name: str,
-    dirs: list,
+    oebl_id: str,
+    gideon_index: dict,
     hmi_file: dict,
-    target_folder: str = "/workspaces/oebl-apis-rdf/oebl-harmonized-neu/",
+    target_folder: str,
 ) -> str:
-    file_check = False
-    for directory in dirs:
-        for subdir, dirs, files in os.walk(directory):
-            for file in files:
-                if file == xml_file_name + ".xml":
-                    file_check = True
-                    file_path = os.path.join(subdir, file)
-                    parser = ET.XMLParser(remove_comments=True, remove_pis=True)
-                    tree = ET.parse(file_path, parser)
-                    remove_namespace(tree, "{http://www.biographien.ac.at}")
-                    x_root = tree.getroot()
-                    x_root = remove_tag_from_xml(x_root, "Fett")
-                    x_root = remove_tag_from_xml(x_root, "Hoch")
-                    x_root.set(
-                        "Nummer", x_root.get("Nummer").replace(".xml", "_print.xml")
-                    )
-                    x_root.set("Version", "1")
-                    if "doi" in hmi_file:
-                        x_root.set("doi", hmi_file["doi"])
-                    if "oebl_id" in hmi_file:
-                        x_root.set("oebl_id", hmi_file["oebl_id"])
-                    if "vaw_PND" in hmi_file:
-                        x_root.set("gnd", hmi_file["vaw_PND"])
-                    if "oebl_Geschlecht" in hmi_file:
-                        x_root.find("Lexikonartikel").append(ET.Element("Geschlecht"))
-                        x_root.find("Lexikonartikel/Geschlecht").set(
-                            "Type", hmi_file["oebl_Geschlecht"]
-                        )
-                    if "oebl_Biographie" in hmi_file:
-                        x_root.set("pdf_file", hmi_file["oebl_Biographie"])
-                    for elem in x_root.findall(".//Nebenbezeichnung"):
-                        if "type" in elem.attrib:
-                            elem.set("Type", elem.get("type"))
-                            elem.attrib.pop("type")
-                    for elem in x_root.findall(".//Lieferung"):
-                        elem.tag = "PubInfo"
-                    new_file_path = os.path.join(
-                        target_folder + xml_file_name + "_print.xml"
-                    )
-                    for att in x_root.attrib.keys():
-                        if att not in [
-                            "Nummer",
-                            "Version",
-                            "pnd",
-                            "eoebl_id",
-                            "doi",
-                            "gnd",
-                            "pdf_file",
-                        ]:
-                            x_root.attrib.pop(att)
-                    tree.write(
-                        new_file_path,
-                        pretty_print=True,
-                        xml_declaration=False,
-                        encoding="UTF-8",
-                    )
-                    with open(new_file_path, "r+") as f:
-                        content = f.read()
-                        content = content.replace(
-                            '<!DOCTYPE Eintrag SYSTEM "../doctype/oeblexikon.dtd">', ""
-                        )
-                        f.seek(0, 0)
-                        f.write(xml_prefix + content)
-                    return True
-    if not file_check:
-        logger.warning(f"No print version found for {xml_file_name}")
-        return False
+    file_path = None
+    if "Adam_Heinrich" in xml_file_name:
+        pass
+    if oebl_id in gideon_index:
+        if "print" in gideon_index[oebl_id]:
+            file_path = gideon_index[oebl_id]["print"]
+    elif xml_file_name in gideon_index:
+        if "print" in gideon_index[xml_file_name]:
+            file_path = gideon_index[xml_file_name]["print"]
+    if file_path is None:
+        if xml_file_name in gideon_index:
+            if "print" in gideon_index[xml_file_name]:
+                file_path = gideon_index[xml_file_name]["print"]
+        if file_path is None:
+            logger.warning(f"No print version found for {xml_file_name}")
+            return False
+    parser = ET.XMLParser(remove_comments=True, remove_pis=True)
+    tree = ET.parse(file_path, parser)
+    remove_namespace(tree, "{http://www.biographien.ac.at}")
+    x_root = tree.getroot()
+    x_root = remove_tag_from_xml(x_root, "Fett")
+    x_root = remove_tag_from_xml(x_root, "Hoch")
+    nummer = x_root.get("Nummer")
+    if nummer is None:
+        nummer = file_path.split("/")[-1].split(".")[0]
+    nummer = nummer.replace(".xml", "")
+    x_root.set("Nummer", nummer + "_print.xml")
+    x_root.set("Version", "1")
+    if "doi" in hmi_file:
+        x_root.set("doi", hmi_file["doi"])
+    if "eoebl_id" in hmi_file:
+        x_root.set("eoebl_id", hmi_file["eoebl_id"])
+    if "vaw_PND" in hmi_file:
+        x_root.set("gnd", hmi_file["vaw_PND"])
+    if "oebl_Geschlecht" in hmi_file:
+        x_root.find("Lexikonartikel").append(ET.Element("Geschlecht"))
+        x_root.find("Lexikonartikel/Geschlecht").set(
+            "Type", hmi_file["oebl_Geschlecht"]
+        )
+    if "oebl_Biographie" in hmi_file:
+        x_root.set("pdf_file", hmi_file["oebl_Biographie"])
+    for elem in x_root.findall(".//Nebenbezeichnung"):
+        if "type" in elem.attrib:
+            elem.set("Type", elem.get("type"))
+            elem.attrib.pop("type")
+    for elem in x_root.findall(".//Lieferung"):
+        elem.tag = "PubInfo"
+    new_file_path = os.path.join(target_folder + "/" + nummer + "_print.xml")
+    for att in x_root.attrib.keys():
+        if att not in [
+            "Nummer",
+            "Version",
+            "pnd",
+            "eoebl_id",
+            "doi",
+            "gnd",
+            "pdf_file",
+        ]:
+            x_root.attrib.pop(att)
+    tree.write(
+        new_file_path,
+        pretty_print=True,
+        xml_declaration=False,
+        encoding="UTF-8",
+    )
+    with open(new_file_path, "r+") as f:
+        content = f.read()
+        content = content.replace(
+            '<!DOCTYPE Eintrag SYSTEM "../doctype/oeblexikon.dtd">', ""
+        )
+        f.seek(0, 0)
+        f.write(xml_prefix + content)
+    return True
 
 
 def enrich_verlag_xml(
     xml_file: ET,
     hmi_file: dict,
     target_folder: str = None,
-    gideon_online_folder: str = "/workspaces/oebl-apis-rdf/oebl-xml-gideon/Online_only",
-    gideon_online_and_print_folder: str = "/workspaces/oebl-apis-rdf/oebl-xml-gideon/Print_UND_Online",
-    gideon_print_folder: str = "/workspaces/oebl-apis-rdf/oebl-xml-gideon/Print_only",
+    gideon_index: dict = None,
 ):
     """Enrich the XML file with information from the HMI file."""
     global count_print_only
@@ -180,12 +187,13 @@ def enrich_verlag_xml(
     global count_print_and_online
 
     x_root = xml_file.getroot()
+
     x_root = remove_tag_from_xml(x_root, "Fett")
     x_root = remove_tag_from_xml(x_root, "Hoch")
     if "doi" in hmi_file:
         x_root.set("doi", hmi_file["doi"])
-    if "oebl_id" in hmi_file:
-        x_root.set("oebl_id", hmi_file["oebl_id"])
+    if "eoebl_id" in hmi_file:
+        x_root.set("eoebl_id", hmi_file["eoebl_id"])
     if "vaw_PND" in hmi_file:
         x_root.set("gnd", hmi_file["vaw_PND"])
     if "oebl_Geschlecht" in hmi_file:
@@ -207,28 +215,45 @@ def enrich_verlag_xml(
         x_root.find(".//Nebenbezeichnung").set("Type", "Vorname")
 
     additional_data = get_data_from_gideon_files(
-        x_root.get("Nummer"),
-        [
-            (
-                gideon_online_and_print_folder,
-                "_online.xml",
-            ),
-            (gideon_print_folder, "_Reg.xml"),
-            (gideon_online_folder, ".xml"),
-        ],
+        x_root.get("eoebl_id"),
+        gideon_index,
+        "online" if "online" in x_root.find(".//Lieferung").text.lower() else "print",
     )
     elem_lexikonartikel = x_root.find(".//Lexikonartikel")
     elem_lexikonartikel.attrib.pop("type", None)
     elem_lexikonartikel.text = None
-    if additional_data["PubInfo"] is None:
-        additional_data = get_data_from_gideon_files(
-            x_root.get("Nummer"),
-            [],
-        )
-    if len(x_root.findall(".//Lieferung")) == 2:
+    if "Baumfeld_Rudolf-Lothar" in x_root.get("Nummer"):
+        pass
+    file_name_search_print = (
+        x_root.get("Nummer") + ".xml"
+        if not x_root.get("Nummer").endswith(".xml")
+        else x_root.get("Nummer")
+    )
+    if len(x_root.findall(".//Lieferung")) == 2 or file_name_search_print in [
+        "Amon_Anton_1862_1931.xml",
+        "Blaas_Karl_1815_1894.xml",
+        "Bremser_Johann-Gottfried_1767_1827.xml",
+        "Budik_Peter-Alcantara_1790_1858.xml",
+        "Conrad-Hoetzendorf_Franz_1852_1925.xml",
+        "Defregger_Franz_1835_1921.xml",
+        "Diesing_Karl-Moritz_1800_1867.xml",
+        "Terramare_Georg_1889_1948.xml",
+        "Falkenhayn_Julius_1829_1899.xml",
+        "Goldmark_Carl_1830_1915.xml",
+        "Huelgerth_Ludwig_1875_1939.xml",
+        "Kandler_Pietro_1804_1872.xml",
+        "Kiesewetter_Irene_1809_1872.xml",
+        "Kner_Rudolf_1810_1869.xml",
+        "Kolessa_Oleksandr-Mychajlovyc_1867_1945.xml",
+        "Loehr_Alexander_1885_1947.xml",
+        "Pirchan_Emil_1844_1928.xml",
+    ]:
         ret = copy_print_version(
-            x_root.get("Nummer"),
-            [gideon_online_and_print_folder],
+            x_root.get("Nummer") + ".xml"
+            if not x_root.get("Nummer").endswith(".xml")
+            else "",
+            hmi_file.get("eoebl_id", None),
+            gideon_index,
             hmi_file,
             target_folder,
         )
@@ -258,7 +283,7 @@ def enrich_verlag_xml(
         elif len(lieferung) == 2:
             lieferung.sort(
                 key=lambda elem: (
-                    re.search(r"[0-9]{4}".group(0), elem.text) if elem.text else "0"
+                    re.search(r"[0-9]{4}", elem.text).group(0) if elem.text else "0"
                 ),
                 reverse=True,
             )
@@ -275,16 +300,126 @@ def enrich_verlag_xml(
         vita.append(additional_data["Tod"])
     if not x_root.get("Nummer").endswith(".xml"):
         x_root.set("Nummer", x_root.get("Nummer") + ".xml")
+    x_root.find(".//Lexikonartikel").text = None
+    x_root.find(".//Lexikonartikel").tail = None
+    if x_root.find(".//Kurzdefinition") is not None:
+        x_root.find(".//Kurzdefinition").tail = None
+    if x_root.find(".//Haupttext") is not None:
+        x_root.find(".//Haupttext").tail = None
     return xml_file
+
+
+def get_normalized_file_name(file_name: str) -> str:
+    with open("/workspaces/oebl-apis-rdf/OEBL_Print_UND_Online_Liste.csv", "r") as file:
+        file_list = csv.reader(file, delimiter=",", quotechar='"')
+        for row in file_list:
+            if file_name in row:
+                return row[1].replace("_online", "")
+    return file_name.replace("_online", "")
+
+
+def create_gideon_index(gideon_dirs: list, verlag_dir: str = None):
+    verlag_list = []
+    if verlag_dir:
+        for subdir, dirs, files in os.walk(verlag_dir):
+            for file in files:
+                if file.endswith(".xml"):
+                    file_path = os.path.join(subdir, file + ".hmi")
+                    data_hmi = parse_hmi_file(file_path)
+                    if "eoebl_id" not in data_hmi:
+                        # logger.warning(f"No eoebl_id found in {file_path}")
+                        continue
+                    verlag_list.append((file, data_hmi["eoebl_id"]))
+    gideon_list = dict()
+    for directory in gideon_dirs:
+        for subdir, dirs, files in os.walk(directory):
+            for file in files:
+                if (
+                    file.endswith(".xml")
+                    and not file.endswith("_Reg.xml")
+                    and not file.endswith("_Verweis.xml")
+                ):
+
+                    file_path = os.path.join(subdir, file)
+                    parser = ET.XMLParser(remove_comments=True, remove_pis=True)
+                    tree = ET.parse(file_path, parser)
+                    remove_namespace(tree, "{http://www.biographien.ac.at}")
+                    root = tree.getroot()
+                    oeblid = root.get("eoebl_id", None)
+                    if oeblid is None:
+                        # logger.warning(f"No oebl_id found in {file_path}")
+                        reg_file = file_path.replace(".xml", "_Reg.xml")
+                        if os.path.exists(reg_file):
+                            tree2 = ET.parse(reg_file, parser)
+                            remove_namespace(tree2, "{http://www.biographien.ac.at}")
+                            root2 = tree2.getroot()
+                            oeblid = root2.get("eoebl_id", None)
+                            # if oeblid is None:
+                            #     logger.warning(f"No oebl_id found in {reg_file}")
+                        if (
+                            os.path.exists(file_path.replace(".xml", "_online.xml"))
+                            and oeblid is None
+                        ):
+                            online_file = file_path.replace(".xml", "_online.xml")
+                            tree2 = ET.parse(online_file, parser)
+                            remove_namespace(tree2, "{http://www.biographien.ac.at}")
+                            root2 = tree2.getroot()
+                            oeblid = root2.get("eoebl_id", None)
+                            # if oeblid is None:
+                            #     logger.warning(f"No oebl_id found in {online_file}")
+
+                        # else:
+                        #     logger.warning(f"No oebl_id found in {file_path}")
+                    pubinfo = root.find(".//PubInfo")
+                    if pubinfo is None:
+                        pubinfo = root.find(".//Lieferung")
+                        if pubinfo is None:
+                            logger.warning(f"No PubInfo found in {file_path}")
+                            continue
+                    pubinfo = pubinfo.text
+                    if oeblid not in gideon_list and oeblid is not None:
+                        gideon_list[oeblid] = {
+                            "online"
+                            if "online" in pubinfo.lower()
+                            else "print": file_path
+                        }
+                    elif oeblid is not None:
+                        kind = "online" if "online" in pubinfo.lower() else "print"
+                        if kind in gideon_list[oeblid]:
+                            logger.warning(f"Multiple {kind} found for {oeblid}")
+                            continue
+                        else:
+                            gideon_list[oeblid][kind] = file_path
+                    file_adapted = get_normalized_file_name(file)
+                    if file_adapted not in gideon_list:
+                        gideon_list[file_adapted] = {
+                            "online"
+                            if "online" in pubinfo.lower()
+                            else "print": file_path
+                        }
+                    else:
+                        kind = "online" if "online" in pubinfo.lower() else "print"
+                        if kind in gideon_list[file_adapted]:
+                            logger.warning(f"Multiple {kind} found for {file_adapted}")
+                        else:
+                            gideon_list[file_adapted][kind] = file_path
+    return gideon_list
 
 
 def create_harmonized_xmls(
     verlag_folder: str,
     output_folder: str,
     relaxng_file: str = "/workspaces/oebl-apis-rdf/apis-oebl-export/oebl_relax_ng_v1.rng",
-    gideon_online_folder: str = "/workspaces/oebl-apis-rdf/oebl-xml-gideon/Online_only",
-    gideon_online_and_print_folder: str = "/workspaces/oebl-apis-rdf/oebl-xml-gideon/Print_UND_Online",
-    gideon_print_folder: str = "/workspaces/oebl-apis-rdf/oebl-xml-gideon/Print_only",
+    gideon_folders: list = [
+        "/workspaces/oebl-apis-rdf/oebl-xml-gideon/Nachtrag",
+        "/workspaces/oebl-apis-rdf/oebl-xml-gideon/oebl_consolidated_xml_korrigiert_09-04-2024",
+        "/workspaces/oebl-apis-rdf/oebl-xml-gideon/Print_UND_Online",
+        "/workspaces/oebl-apis-rdf/oebl-xml-gideon/Online_only",
+        "/workspaces/oebl-apis-rdf/oebl-xml-gideon/Print_only",
+    ],
+    # gideon_online_folder: str = "/workspaces/oebl-apis-rdf/oebl-xml-gideon/Online_only",
+    # gideon_online_and_print_folder: str = "/workspaces/oebl-apis-rdf/oebl-xml-gideon/Print_UND_Online",
+    # gideon_print_folder: str = "/workspaces/oebl-apis-rdf/oebl-xml-gideon/Print_only",
 ):
     """Run through the folder of XMLs and enrich them with information
     from the HMI file. Save the enriched XMLs in the output folder."""
@@ -293,6 +428,7 @@ def create_harmonized_xmls(
     global count_online_only
     global count_print_and_online
     global count_verweise
+    gideon_index = create_gideon_index(gideon_folders, verlag_folder)
     with open(relaxng_file, "r") as relaxng_file:
         relaxng_doc = ET.parse(relaxng_file)
         relaxng = ET.RelaxNG(relaxng_doc)
@@ -314,23 +450,36 @@ def create_harmonized_xmls(
                     try:
                         parser = ET.XMLParser(remove_comments=True, remove_pis=True)
                         tree = ET.parse(xml_file, parser)
-                    except ET.ParseError:
-                        logger.error(f"Error parsing file: {file_path}")
+                    except (ET.ParseError, UnicodeDecodeError) as e:
+                        logger.error(f"Error parsing file: {file_path}, {e}")
                         continue
-                    if tree.getroot().get("Nummer") in [
-                        "Koeroesy-Szanto_Josef_1844_1906.xml",
-                        "Koszta_Jozsef_1861_1949.xml",
-                    ]:
-                        logger.info(
-                            f"Broken file {tree.getroot().get('Nummer')}, skipping"
-                        )
-                        continue
+                    # if tree.getroot().get("Nummer") in [
+                    #     "Koeroesy-Szanto_Josef_1844_1906.xml",
+                    #     "Koszta_Jozsef_1861_1949.xml",
+                    # ]:
+                    #     logger.info(
+                    #         f"Broken file {tree.getroot().get('Nummer')}, skipping"
+                    #     )
+                    #     continue
                     if len(tree.getroot().findall("./Verweis")) > 0:
                         logger.info(f"{file} is Verweis, skipping")
                         count_verweise += 1
                         continue
+                    if tree.getroot().find(".//Lieferung") is None:
+                        logger.info(f"{file} has no Lieferung, skipping")
+                        continue
+                    if tree.getroot().find(".//Lieferung") is not None:
+                        if tree.getroot().find(".//Lieferung").text is not None:
+                            if (
+                                "miterwähnt"
+                                in tree.getroot().find(".//Lieferung").text.lower()
+                            ):
+                                logger.info(f"{file} is miterwähnt, skipping")
+                                continue
                     hmi_file = parse_hmi_file(file_path + ".hmi")
-                    xml_neu = enrich_verlag_xml(tree, hmi_file)
+                    xml_neu = enrich_verlag_xml(
+                        tree, hmi_file, output_folder, gideon_index
+                    )
                     # Remove 'Lieferungen'  from XML
                     for lieferung in xml_neu.findall(".//Lieferung"):
                         xml_neu.find(".//Lexikonartikel").remove(lieferung)
@@ -364,25 +513,25 @@ def create_harmonized_xmls(
 def main():
     parser = argparse.ArgumentParser(description="Create harmonized XMLs.")
     parser.add_argument(
-        "input_dir_verlag",
+        "--input_dir_verlag",
         help="Input directory containing the original XML files from Verlag.",
     )
     parser.add_argument(
-        "output_dir", help="Output directory to save the harmonized XML files."
+        "--output_dir", help="Output directory to save the harmonized XML files."
     )
-    parser.add_argument(
-        "input_dir_gideon_online",
-        help="Input directory containing the original XML files from Gideon (online only).",
-    )
-    parser.add_argument(
-        "input_dir_gideon_online_and_print",
-        help="Input directory containing the original XML files from Gideon (online and print).",
-    )
-    parser.add_argument(
-        "input_dir_gideon_print",
-        help="Input directory containing the original XML files from Gideon (print only).",
-    )
-    parser.add_argument("relaxng", help="Relaxng schema file.")
+    # parser.add_argument(
+    #     "input_dir_gideon_online",
+    #     help="Input directory containing the original XML files from Gideon (online only).",
+    # )
+    # parser.add_argument(
+    #     "input_dir_gideon_online_and_print",
+    #     help="Input directory containing the original XML files from Gideon (online and print).",
+    # )
+    # parser.add_argument(
+    #     "input_dir_gideon_print",
+    #     help="Input directory containing the original XML files from Gideon (print only).",
+    # )
+    # parser.add_argument("relaxng", help="Relaxng schema file.")
     args = parser.parse_args()
     create_harmonized_xmls(args.input_dir_verlag, args.output_dir)
 
